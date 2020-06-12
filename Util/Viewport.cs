@@ -32,6 +32,7 @@ namespace Mogol.Util {
 			}
 		}
 
+		public bool Inside( int x, int y ) => !( x < X || x >= X + Width || y < Y || y >= Y + Height );
 		public override bool Equals( object other ) => other is Viewport && Equals( (Viewport)other );
 		public bool Equals( Viewport other ) => X == other.X && Y == other.Y && Width == other.Width && Height == other.Height;
 		public override int GetHashCode( ) => HashCode.Combine( X.GetHashCode( ), Y.GetHashCode( ), Width.GetHashCode( ), Height.GetHashCode( ) );

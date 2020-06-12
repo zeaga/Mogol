@@ -1,6 +1,7 @@
 ﻿using Mogol.Util;
 using Raylib_cs;
 using System;
+using System.Numerics;
 using System.Runtime.InteropServices;
 
 namespace Mogol {
@@ -43,8 +44,7 @@ namespace Mogol {
 					float tickTime = 1f / TPS;
 					tickTimer += Raylib.GetFrameTime( );
 					if ( tickTimer >= tickTime ) {
-						if ( !ShowHelp )
-							FixedUpdate( );
+						FixedUpdate( );
 						tickTimer -= tickTime;
 					}
 				}
@@ -55,11 +55,11 @@ namespace Mogol {
 			Raylib.CloseWindow( );
 		}
 
-		static int maxRadius = ( World.Width < World.Height ? World.Width : World.Height ) / 2 - 1;
+		private static bool MouseInGame => !( MouseX < 0 || MouseX >= World.Width || MouseY < 0 || MouseY >= World.Height );
+
+		static int maxRadius = ( World.Width > World.Height ? World.Width : World.Height ) / 2 - 1;
 		private static void Update( ) {
 			ShowHelp ^= Raylib.IsKeyPressed( KeyboardKey.KEY_F1 );
-			if ( ShowHelp )
-				return;
 			Radius += Raylib.GetMouseWheelMove( );
 			Radius = Radius < 0 ? 0 : Radius > maxRadius ? maxRadius : Radius;
 			if ( Raylib.IsKeyPressed( KeyboardKey.KEY_C ) )
@@ -69,12 +69,14 @@ namespace Mogol {
 			Playing ^= Raylib.IsKeyPressed( KeyboardKey.KEY_SPACE );
 			if ( !Playing && Raylib.IsKeyPressed( KeyboardKey.KEY_P ) )
 				World.Update( );
+			if ( ShowHelp || !MouseInGame )
+				return;
 			int set = Raylib.IsMouseButtonDown( MouseButton.MOUSE_LEFT_BUTTON ) ? 1 : Raylib.IsMouseButtonDown( MouseButton.MOUSE_RIGHT_BUTTON ) ? 0 : -1;
-			if ( set >= 0 ) {
-				for ( int x = -Radius; x <= Radius; x++ ) {
-					for ( int y = -Radius; y <= Radius; y++ ) {
-						World.Set( MouseX + x, MouseY + y, set );
-					}
+			if ( set < 0 )
+				return;
+			for ( int x = -Radius; x <= Radius; x++ ) {
+				for ( int y = -Radius; y <= Radius; y++ ) {
+					World.Set( MouseX + x, MouseY + y, set );
 				}
 			}
 		}
@@ -93,10 +95,12 @@ namespace Mogol {
 				}
 			}
 			int size = 2 * Radius + 1;
-			if ( !ShowHelp )
+			if ( !ShowHelp && !ViewCtrls.Inside( Raylib.GetMouseX( ), Raylib.GetMouseY( ) ) )
 				Raylib.DrawRectangleLines( ViewGame.Left + (int)( ( MouseX - Radius ) * CELL_WIDTH ), ViewGame.Top + (int)( ( MouseY - Radius ) * CELL_HEIGHT ), (int)( size * CELL_WIDTH ), (int)( size * CELL_HEIGHT ), Color.GRAY );
-			if ( !Playing && !ShowHelp )
-				Raylib.DrawText( "PAUSED", ViewGame.Right - ( ViewGame.Width + Raylib.MeasureText( "PAUSED", PAUSED_SIZE ) ) / 2, ViewGame.Bottom - ( ViewGame.Height + PAUSED_SIZE ) / 2, PAUSED_SIZE, new Color( 127, 127, 127, 127 ) );
+			if ( !Playing ) {
+				Raylib.DrawRectangle( ViewGame.Right - 112, 32, ViewGame.Top + 32, 80, new Color( 127, 127, 127, 223 ) );
+				Raylib.DrawRectangle( ViewGame.Right - 64, ViewGame.Top + 32, 32, 80, new Color( 127, 127, 127, 223 ) );
+			}
 			//draw help
 			if ( ShowHelp ) {
 				int j = 1;
