@@ -36,8 +36,15 @@ namespace Mogol {
 			grid2 = new int[width, height];
 		}
 
-		public int Get( int x, int y ) => Grid[x.Mod( Width ), y.Mod( Height )];
-		public void Set( int x, int y, int value ) => Grid[x.Mod( Width ), y.Mod( Height )] = value;
+		public int Get( int x, int y, bool offGrid = false ) => x < 0 || x >= Width || y < 0 || y >= Height ? 0 : offGrid ? OffGrid[x, y] : Grid[x, y];
+		public void Set( int x, int y, int value, bool offGrid = false ) {
+			if ( x < 0 || x >= Width || y < 0 || y >= Height )
+				return;
+			if ( offGrid )
+				OffGrid[x, y] = value;
+			else
+				Grid[x, y] = value;
+		}
 
 		public int[,] Swap( ) {
 			which ^= true;
@@ -69,14 +76,14 @@ namespace Mogol {
 			Swap( );
 		}
 
-		public int IsOn( int x, int y ) => Grid[x, y] == 0 ? 0 : 1;
+		public int IsOn( int x, int y ) => Get( x, y );
 
 		public int SumNeighbors( int x, int y ) {
-			int l = ( x - 1 ).Mod( Width );
-			int r = ( x + 1 ).Mod( Width );
-			int u = ( y - 1 ).Mod( Height );
-			int d = ( y + 1 ).Mod( Height );
-			return IsOn( l, u ) + IsOn( x, u ) + IsOn( r, u ) + IsOn( l, y ) + IsOn( r, y ) + IsOn( l, d ) + IsOn( x, d ) + IsOn( r, d );
+			int l = x - 1;
+			int r = x + 1;
+			int u = y - 1;
+			int d = y + 1;
+			return Get( l, u ) + Get( x, u ) + Get( r, u ) + Get( l, y ) + Get( r, y ) + Get( l, d ) + Get( x, d ) + Get( r, d );
 		}
 
 	}
