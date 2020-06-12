@@ -117,7 +117,7 @@ namespace Mogol {
 				DrawText( "Please direct feedback to Zeaga#5406", x, y + FontHeight * ++j, Color.LIGHTGRAY );
 				j = 0;
 				x += FontWidth * 36;
-				DrawText( "Interesting rules (click to set):", x, y + FontHeight * ++j );
+				DrawText( "Interesting rules (click to set):", x, y + FontHeight * ++j, Color.LIGHTGRAY );
 				x += FontWidth * 4;
 				DrawText( "Amoeba (S1358/B357)", x, y + FontHeight * ++j, Color.WHITE, ( ) => {
 					World.SurviveRule.Set( 1, 3, 5, 8 );
