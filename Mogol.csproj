@@ -4,6 +4,9 @@
     <OutputType>WinExe</OutputType>
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <StartupObject>Mogol.Program</StartupObject>
+    <Authors>C. Tyler Hart</Authors>
+    <PackageProjectUrl>http://tylerh.me</PackageProjectUrl>
+    <Version>0.1.0</Version>
   </PropertyGroup>
 
   <ItemGroup>
