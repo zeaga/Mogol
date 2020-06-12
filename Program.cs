@@ -1,13 +1,11 @@
 ﻿using Mogol.Util;
 using Raylib_cs;
-using System;
-using System.Numerics;
 using System.Runtime.InteropServices;
 
 namespace Mogol {
 	internal class Program {
 
-		public const float TICK_TIME = 1 / 15f;
+		private const bool DEBUG_BUTTONS = false;
 
 		[DllImport( "shlwapi.dll" )]
 		public static extern int ColorHLSToRGB( int H, int L, int S );
@@ -15,6 +13,11 @@ namespace Mogol {
 		public readonly static Viewport ViewWindow = new Viewport( 1600, 900 );
 		public readonly static Viewport ViewGame = new Viewport( 0, 0, ViewWindow.Width, ViewWindow.Width / 2 );
 		public readonly static Viewport ViewCtrls = new Viewport( 0, ViewGame.Height, ViewWindow.Width, ViewWindow.Height - ViewGame.Height );
+
+		public static int MeasureText( string text ) => Raylib.MeasureText( text, FontHeight );
+		public static int FontHeight => ViewWindow.Height / 45;
+		public static int FontWidth => MeasureText( "M" );
+		private static int PAUSED_SIZE = FontHeight * 10;
 
 		public static World World = new World( 160, 80, new Rule( 3 ), new Rule( 2, 3 ) );
 
@@ -26,6 +29,7 @@ namespace Mogol {
 
 		private static bool Playing = false;
 		private static int Radius = 0;
+		private static int TPS = 15;
 
 		private static void Main( ) {
 			Raylib.InitWindow( ViewWindow.Width, ViewWindow.Height, "Mogol" );
@@ -34,10 +38,11 @@ namespace Mogol {
 			while ( !Raylib.WindowShouldClose( ) ) {
 				Update( );
 				if ( Playing ) {
+					float tickTime = 1f / TPS;
 					tickTimer += Raylib.GetFrameTime( );
-					if ( tickTimer >= TICK_TIME ) {
+					if ( tickTimer >= tickTime ) {
 						FixedUpdate( );
-						tickTimer -= TICK_TIME;
+						tickTimer -= tickTime;
 					}
 				}
 				Raylib.BeginDrawing( );
@@ -48,14 +53,8 @@ namespace Mogol {
 		}
 
 		static int maxRadius = ( World.Width < World.Height ? World.Width : World.Height ) / 2 - 1;
-		private static KeyboardKey radiusDec = KeyboardKey.KEY_LEFT_BRACKET;
-		private static KeyboardKey radiusInc = KeyboardKey.KEY_RIGHT_BRACKET;
-		private static KeyboardKey modifier = KeyboardKey.KEY_LEFT_SHIFT;
 		private static void Update( ) {
-			if ( Raylib.IsKeyDown( modifier ) && Raylib.IsKeyDown( radiusDec ) || Raylib.IsKeyPressed( radiusDec ) )
-				Radius--;
-			if ( Raylib.IsKeyDown( modifier ) && Raylib.IsKeyDown( radiusInc ) || Raylib.IsKeyPressed( radiusInc ) )
-				Radius++;
+			Radius += Raylib.GetMouseWheelMove( );
 			Radius = Radius < 0 ? 0 : Radius > maxRadius ? maxRadius : Radius;
 			if ( Raylib.IsKeyPressed( KeyboardKey.KEY_C ) )
 				World.Clear( );
@@ -75,47 +74,52 @@ namespace Mogol {
 		}
 
 		private static void FixedUpdate( ) => World.Update( );
-
-		private static void DrawCell( int x, int y, Color color ) => Raylib.DrawRectangle( ViewGame.Left + (int)( x * CELL_WIDTH ), ViewGame.Top + (int)( y * CELL_HEIGHT ), (int)CELL_WIDTH, (int)CELL_HEIGHT, color );
+		private static void DrawCell( int x, int y ) => Raylib.DrawRectangle( ViewGame.Left + (int)( x * CELL_WIDTH ), ViewGame.Top + (int)( y * CELL_HEIGHT ), (int)CELL_WIDTH, (int)CELL_HEIGHT, Color.WHITE );
 		private static void Draw( ) {
 			// draw game
 			Raylib.ClearBackground( Color.BLACK );
 			for ( int x = 0; x < World.Width; x++ ) {
 				for ( int y = 0; y < World.Height; y++ ) {
-					int v = World.Grid[x, y];
-					if ( v > 0 ) {
-						//v = ( v - 80 ).Mod( 160 );
-						//int c = ColorHLSToRGB( v < 160 ? v : 160, v < 160 ? 120 : v < 280 ? v - 40 : 240, 240 );
-						//int c = ColorHLSToRGB( v.Mod( 240 ), 120 + ( v / 120 ), 240 );
-						//DrawCell( x, y, new Color( c & 0xFF, ( c >> 8 ) & 0xFF, ( c >> 16 ) & 0xFF, 0xFF ) );
-						DrawCell( x, y, Color.RAYWHITE );
-					}
+					if ( World.Grid[x, y] > 0 )
+						DrawCell( x, y );
 				}
 			}
 			int size = 2 * Radius + 1;
 			Raylib.DrawRectangleLines( ViewGame.Left + (int)( ( MouseX - Radius ) * CELL_WIDTH ), ViewGame.Top + (int)( ( MouseY - Radius ) * CELL_HEIGHT ), (int)( size * CELL_WIDTH ), (int)( size * CELL_HEIGHT ), Color.GRAY );
 			// draw ctrls
 			int mn = 9;
-			int sz = 20;
 			int i = 0;
 			Raylib.DrawRectangle( ViewCtrls.X, ViewCtrls.Y, ViewCtrls.Width, ViewCtrls.Height, Color.DARKGRAY );
-			Raylib.DrawText( $"{Raylib.GetFPS( )}FPS", ViewCtrls.Left + mn, ViewCtrls.Top + mn + sz * i++, 20, Color.GRAY );
-			Raylib.DrawText( $"{size}px", ViewCtrls.Left + mn, ViewCtrls.Top + mn + sz * i++, sz, Color.GRAY );
-			DrawRule( 'S', ViewCtrls.Left + mn, ViewCtrls.Top + mn + sz * i++, 20, 1 );
-			DrawRule( 'B', ViewCtrls.Left + mn, ViewCtrls.Top + mn + sz * i++, 20, 0 );
+			Raylib.DrawText( $"{Raylib.GetFPS( )}FPS", ViewCtrls.Left + mn, ViewCtrls.Top + mn + FontHeight * i++, 20, Color.GRAY );
+			Raylib.DrawText( $"{size}px", ViewCtrls.Left + mn, ViewCtrls.Top + mn + FontHeight * i++, FontHeight, Color.GRAY );
+			DrawRule( 'S', ViewCtrls.Left + mn, ViewCtrls.Top + mn + FontHeight * i++, 1 );
+			DrawRule( 'B', ViewCtrls.Left + mn, ViewCtrls.Top + mn + FontHeight * i++, 0 );
+			string strTick = $"{TPS}tps";
+			int totalLength = FontWidth * strTick.Length;
+			Raylib.DrawText( strTick, ViewCtrls.Right - mn - totalLength, ViewCtrls.Top + mn, FontHeight, Color.GRAY );
+			if ( AreaClicked( ViewCtrls.Right - mn - totalLength, ViewCtrls.Top + mn, totalLength, FontHeight ) )
+				TPS = TPS < 60 ? TPS + 1 : 60;
+			if ( AreaClicked( ViewCtrls.Right - mn - totalLength, ViewCtrls.Top + mn, totalLength, FontHeight, true ) )
+				TPS = TPS > 0 ? TPS - 1 : 0;
+			if ( !Playing )
+				Raylib.DrawText( "PAUSED", ViewGame.Right - ( ViewGame.Width + Raylib.MeasureText( "PAUSED", PAUSED_SIZE ) ) / 2, ViewGame.Bottom - ( ViewGame.Height + PAUSED_SIZE ) / 2, PAUSED_SIZE, new Color( 127, 127, 127, 127 ) );
 		}
 
-		private static void DrawRule( char prefix, int posX, int posY, int fontSize, int ruleId ) {
-			Raylib.DrawText( $"{prefix}:", posX, posY, fontSize, Color.GRAY );
+		private static void DrawRule( char prefix, int posX, int posY, int ruleId ) {
+			Raylib.DrawText( $"{prefix}:", posX, posY, FontHeight, Color.GRAY );
+			posX += FontWidth * 2;
 			for ( int i = 0; i <= 8; i++ ) {
-				int x = posX + 26 + i * 12;
-				Raylib.DrawText( $"{8 - i}", x, posY, 20, World.Rules[ruleId][8 - i] ? Color.LIGHTGRAY : Color.GRAY );
-				if ( AreaClicked( x, posY, 11, 20 ) )
+				int x = posX + i * FontWidth;
+				Raylib.DrawText( $"{8 - i}", x, posY, FontHeight, World.Rules[ruleId][8 - i] ? Color.LIGHTGRAY : Color.GRAY );
+				if ( AreaClicked( x, posY, FontWidth - 1, FontHeight ) )
 					World.Rules[ruleId][8 - i] ^= true;
 			}
 		}
 
-		private static bool AreaClicked( int x, int y, int width, int height, bool right = false ) => Raylib.IsMouseButtonPressed( right ? MouseButton.MOUSE_RIGHT_BUTTON : MouseButton.MOUSE_LEFT_BUTTON ) && Raylib.GetMouseX( ) >= x && Raylib.GetMouseX( ) < x + width && Raylib.GetMouseY( ) >= y && Raylib.GetMouseY( ) < y + height;
-
+		private static bool AreaClicked( int x, int y, int width, int height, bool right = false ) {
+			if ( DEBUG_BUTTONS )
+				Raylib.DrawRectangleLines( x, y, width, height, Color.RED );
+			return Raylib.IsMouseButtonPressed( right ? MouseButton.MOUSE_RIGHT_BUTTON : MouseButton.MOUSE_LEFT_BUTTON ) && Raylib.GetMouseX( ) >= x && Raylib.GetMouseX( ) < x + width && Raylib.GetMouseY( ) >= y && Raylib.GetMouseY( ) < y + height;
+		}
 	}
 }
