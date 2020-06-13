@@ -1,7 +1,6 @@
 ﻿using Mogol.Util;
 using Raylib_cs;
 using System;
-using System.Numerics;
 using System.Runtime.InteropServices;
 
 namespace Mogol {
@@ -19,7 +18,6 @@ namespace Mogol {
 		public static int MeasureText( string text ) => Raylib.MeasureText( text, FontHeight );
 		public static int FontHeight => ViewWindow.Height / 45;
 		public static int FontWidth => MeasureText( "M" );
-		private static int PAUSED_SIZE = FontHeight * 10;
 
 		public static World World = new World( 160, 80, new Rule( 3 ), new Rule( 2, 3 ) );
 
@@ -31,7 +29,7 @@ namespace Mogol {
 
 		private static bool Playing = false;
 		private static bool ShowHelp = false;
-		private static int Radius = 0;
+		private static int BrushSize = 1;
 		private static int TPS = 15;
 
 		private static readonly Color ColorDebugOutline = Color.RED;
@@ -69,12 +67,12 @@ namespace Mogol {
 
 		private static bool MouseInGame => !( MouseX < 0 || MouseX >= World.Width || MouseY < 0 || MouseY >= World.Height );
 
-		static int maxRadius = ( World.Width > World.Height ? World.Width : World.Height ) / 2 - 1;
+		static int maxBrushSize = ( World.Width > World.Height ? World.Width : World.Height ) / 2 - 1;
 		private static void Update( ) {
 			ShowHelp ^= Raylib.IsKeyPressed( KeyboardKey.KEY_F1 );
 			Playing ^= Raylib.IsKeyPressed( KeyboardKey.KEY_SPACE );
-			Radius += Raylib.GetMouseWheelMove( );
-			Radius = Radius < 0 ? 0 : Radius > maxRadius ? maxRadius : Radius;
+			BrushSize += Raylib.GetMouseWheelMove( );
+			BrushSize = BrushSize < 0 ? 0 : BrushSize > maxBrushSize ? maxBrushSize : BrushSize;
 			if ( Raylib.IsKeyPressed( KeyboardKey.KEY_C ) )
 				World.Clear( );
 			if ( Raylib.IsKeyPressed( KeyboardKey.KEY_R ) )
@@ -88,8 +86,9 @@ namespace Mogol {
 			int set = Raylib.IsMouseButtonDown( MouseButton.MOUSE_LEFT_BUTTON ) ? 1 : Raylib.IsMouseButtonDown( MouseButton.MOUSE_RIGHT_BUTTON ) ? 0 : -1;
 			if ( set < 0 )
 				return;
-			for ( int x = -Radius; x <= Radius; x++ ) {
-				for ( int y = -Radius; y <= Radius; y++ ) {
+			int from = -(int)( BrushSize / 2f + 0.5f ), to = BrushSize / 2;
+			for ( int x = from; x <= to; x++ ) {
+				for ( int y = from; y <= to; y++ ) {
 					World.Set( MouseX + x, MouseY + y, set );
 				}
 			}
@@ -108,9 +107,17 @@ namespace Mogol {
 						DrawCell( x, y );
 				}
 			}
-			int size = 2 * Radius + 1;
-			if ( !ShowHelp && !ViewCtrls.Inside( Raylib.GetMouseX( ), Raylib.GetMouseY( ) ) )
-				Raylib.DrawRectangleLines( ViewGame.Left + (int)( ( MouseX - Radius ) * CELL_WIDTH ), ViewGame.Top + (int)( ( MouseY - Radius ) * CELL_HEIGHT ), (int)( size * CELL_WIDTH ), (int)( size * CELL_HEIGHT ), ColorGameCursor );
+			if ( !ShowHelp && ViewGame.Inside( Raylib.GetMouseX( ), Raylib.GetMouseY( ) ) ) {
+				int cursorX = (int)( (int)( MouseX - BrushSize / 2f ) * CELL_WIDTH );
+				int cursorY = (int)( (int)( MouseY - BrushSize / 2f ) * CELL_HEIGHT );
+				int cursorWidth = (int)( ( BrushSize + 1 ) * CELL_WIDTH );
+				cursorWidth = cursorX + cursorWidth > ViewGame.Width ? ViewGame.Width - cursorX : cursorWidth;
+				cursorWidth = cursorX < 0 ? cursorWidth + cursorX : cursorWidth;
+				int cursorHeight = (int)( ( BrushSize + 1 ) * CELL_HEIGHT );
+				cursorHeight = cursorY + cursorHeight > ViewGame.Height ? ViewGame.Height - cursorY : cursorHeight;
+				cursorHeight = cursorY < 0 ? cursorHeight + cursorY : cursorHeight;
+				Raylib.DrawRectangleLines( ViewGame.Left + ( cursorX < 0 ? 0 : cursorX ), ViewGame.Top + ( cursorY < 0 ? 0 : cursorY ), cursorWidth, cursorHeight, ColorGameCursor );
+			}
 			if ( !Playing ) {
 				Raylib.DrawRectangle( ViewGame.Right - 112, 32, ViewGame.Top + 32, 80, ColorPauseButton );
 				Raylib.DrawRectangle( ViewGame.Right - 64, ViewGame.Top + 32, 32, 80, ColorPauseButton );
@@ -181,7 +188,7 @@ namespace Mogol {
 				TPS = TPS < 60 ? TPS + 5 : 60;
 			if ( AreaClicked( ViewCtrls.Left + mn + wd * xi, ViewCtrls.Top + mn, length, FontHeight, true ) )
 				TPS = TPS > 5 ? TPS - 5 : 5;
-			Raylib.DrawText( $"{size}px", ViewCtrls.Left + mn, ViewCtrls.Top + mn + FontHeight * ++yi, FontHeight, ColorCtrlsText );
+			Raylib.DrawText( $"{BrushSize + 1}px", ViewCtrls.Left + mn, ViewCtrls.Top + mn + FontHeight * ++yi, FontHeight, ColorCtrlsText );
 			DrawRule( 'S', ViewCtrls.Left + mn, ViewCtrls.Top + mn + FontHeight * ++yi, 1 );
 			DrawRule( 'B', ViewCtrls.Left + mn, ViewCtrls.Top + mn + FontHeight * ++yi, 0 );
 			yi = -1;
