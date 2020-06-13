@@ -34,6 +34,18 @@ namespace Mogol {
 		private static int Radius = 0;
 		private static int TPS = 15;
 
+		private static readonly Color ColorDebugOutline = Color.RED;
+		private static readonly Color ColorGameBackground = Color.BLACK;
+		private static readonly Color ColorGameCell = Color.RAYWHITE;
+		private static readonly Color ColorGameCursor = Color.DARKGRAY;
+		private static readonly Color ColorHelpBackground = new Color( 0, 0, 0, 223 );
+		private static readonly Color ColorHelpText = Color.LIGHTGRAY;
+		private static readonly Color ColorHelpTextActive = Color.RAYWHITE;
+		private static readonly Color ColorCtrlsBackground = Color.DARKGRAY;
+		private static readonly Color ColorCtrlsText = Color.GRAY;
+		private static readonly Color ColorCtrlsTextActive = Color.LIGHTGRAY;
+		private static readonly Color ColorPauseButton = new Color( 127, 127, 127, 223 );
+
 		private static void Main( ) {
 			Raylib.InitWindow( ViewWindow.Width, ViewWindow.Height, "Mogol" );
 			Raylib.SetTargetFPS( int.MaxValue );
@@ -60,13 +72,15 @@ namespace Mogol {
 		static int maxRadius = ( World.Width > World.Height ? World.Width : World.Height ) / 2 - 1;
 		private static void Update( ) {
 			ShowHelp ^= Raylib.IsKeyPressed( KeyboardKey.KEY_F1 );
+			Playing ^= Raylib.IsKeyPressed( KeyboardKey.KEY_SPACE );
 			Radius += Raylib.GetMouseWheelMove( );
 			Radius = Radius < 0 ? 0 : Radius > maxRadius ? maxRadius : Radius;
 			if ( Raylib.IsKeyPressed( KeyboardKey.KEY_C ) )
 				World.Clear( );
 			if ( Raylib.IsKeyPressed( KeyboardKey.KEY_R ) )
 				World.Randomize( );
-			Playing ^= Raylib.IsKeyPressed( KeyboardKey.KEY_SPACE );
+			if ( Raylib.IsKeyPressed( KeyboardKey.KEY_W ) )
+				World.Wrap ^= true;
 			if ( !Playing && Raylib.IsKeyPressed( KeyboardKey.KEY_P ) )
 				World.Update( );
 			if ( ShowHelp || !MouseInGame )
@@ -82,12 +96,12 @@ namespace Mogol {
 		}
 
 		private static void FixedUpdate( ) => World.Update( );
-		private static void DrawCell( int x, int y ) => Raylib.DrawRectangle( ViewGame.Left + (int)( x * CELL_WIDTH ), ViewGame.Top + (int)( y * CELL_HEIGHT ), (int)CELL_WIDTH, (int)CELL_HEIGHT, Color.WHITE );
+		private static void DrawCell( int x, int y ) => Raylib.DrawRectangle( ViewGame.Left + (int)( x * CELL_WIDTH ), ViewGame.Top + (int)( y * CELL_HEIGHT ), (int)CELL_WIDTH, (int)CELL_HEIGHT, ColorGameCell );
 		private static void Draw( ) {
 			int mn = 9;
 			int wd = FontWidth * 16;
 			// draw game
-			Raylib.ClearBackground( Color.BLACK );
+			Raylib.ClearBackground( ColorGameBackground );
 			for ( int x = 0; x < World.Width; x++ ) {
 				for ( int y = 0; y < World.Height; y++ ) {
 					if ( World.Grid[x, y] > 0 )
@@ -96,80 +110,89 @@ namespace Mogol {
 			}
 			int size = 2 * Radius + 1;
 			if ( !ShowHelp && !ViewCtrls.Inside( Raylib.GetMouseX( ), Raylib.GetMouseY( ) ) )
-				Raylib.DrawRectangleLines( ViewGame.Left + (int)( ( MouseX - Radius ) * CELL_WIDTH ), ViewGame.Top + (int)( ( MouseY - Radius ) * CELL_HEIGHT ), (int)( size * CELL_WIDTH ), (int)( size * CELL_HEIGHT ), Color.GRAY );
+				Raylib.DrawRectangleLines( ViewGame.Left + (int)( ( MouseX - Radius ) * CELL_WIDTH ), ViewGame.Top + (int)( ( MouseY - Radius ) * CELL_HEIGHT ), (int)( size * CELL_WIDTH ), (int)( size * CELL_HEIGHT ), ColorGameCursor );
 			if ( !Playing ) {
-				Raylib.DrawRectangle( ViewGame.Right - 112, 32, ViewGame.Top + 32, 80, new Color( 127, 127, 127, 223 ) );
-				Raylib.DrawRectangle( ViewGame.Right - 64, ViewGame.Top + 32, 32, 80, new Color( 127, 127, 127, 223 ) );
+				Raylib.DrawRectangle( ViewGame.Right - 112, 32, ViewGame.Top + 32, 80, ColorPauseButton );
+				Raylib.DrawRectangle( ViewGame.Right - 64, ViewGame.Top + 32, 32, 80, ColorPauseButton );
 			}
 			//draw help
 			if ( ShowHelp ) {
 				int j = 1;
 				int x = ViewGame.Left + mn;
 				int y = ViewGame.Top + mn;
-				Raylib.DrawRectangle( ViewGame.Left + mn / 2, ViewGame.Top + mn / 2, FontWidth * 64, mn + mn + FontHeight * 14, new Color( 0, 0, 0, 223 ) );
-				DrawText( "L/R click to set/unset cells", x, y + FontHeight * ++j, Color.LIGHTGRAY );
-				DrawText( $"L/R click \"{TPS}tps\" to increase/decrease tickrate", x, y + FontHeight * ++j, Color.LIGHTGRAY );
-				DrawText( "Scrollwheel to change brush size", x, y + FontHeight * ++j, Color.LIGHTGRAY );
-				DrawText( "<R> to randomize cells", x, y + FontHeight * ++j, Color.LIGHTGRAY );
-				DrawText( "<C> to clear cells", x, y + FontHeight * ++j, Color.LIGHTGRAY );
-				DrawText( "<P> to step one generation (if paused)", x, y + FontHeight * ++j, Color.LIGHTGRAY );
-				DrawText( "<Space> to toggle pause", x, y + FontHeight * ++j, Color.LIGHTGRAY );
+				Raylib.DrawRectangle( ViewGame.Left + mn / 2, ViewGame.Top + mn / 2, FontWidth * 64, mn + mn + FontHeight * 15, ColorHelpBackground );
+				DrawText( "L/R click to set/unset cells", x, y + FontHeight * ++j, ColorHelpText );
+				DrawText( $"L/R click \"{TPS}tps\" to increase/decrease tickrate", x, y + FontHeight * ++j, ColorHelpText );
+				DrawText( "Scrollwheel to change brush size", x, y + FontHeight * ++j, ColorHelpText );
+				DrawText( "<R> to randomize cells", x, y + FontHeight * ++j, ColorHelpText );
+				DrawText( "<C> to clear cells", x, y + FontHeight * ++j, ColorHelpText );
+				DrawText( "<P> to step one generation (if paused)", x, y + FontHeight * ++j, ColorHelpText );
+				DrawText( "<W> to toggle wrapping", x, y + FontHeight * ++j, ColorHelpText );
+				DrawText( "<Space> to toggle pause", x, y + FontHeight * ++j, ColorHelpText );
 				j++;
-				DrawText( "You can modify the game rules in realtime", x, y + FontHeight * ++j, Color.LIGHTGRAY );
-				DrawText( "Click a digit to toggle its state in the rule", x, y + FontHeight * ++j, Color.LIGHTGRAY );
-				DrawText( "For more information Google \"2D Cellular Automation\"", x, y + FontHeight * ++j, Color.LIGHTGRAY );
-				DrawText( "Please direct feedback to Zeaga#5406", x, y + FontHeight * ++j, Color.LIGHTGRAY );
+				DrawText( "You can modify the game rules in realtime", x, y + FontHeight * ++j, ColorHelpText );
+				DrawText( "Click a digit to toggle its state in the rule", x, y + FontHeight * ++j, ColorHelpText );
+				DrawText( "For more information Google \"2D Cellular Automation\"", x, y + FontHeight * ++j, ColorHelpText );
+				DrawText( "Please direct feedback to Zeaga#5406", x, y + FontHeight * ++j, ColorHelpText );
 				j = 0;
 				x += FontWidth * 36;
-				DrawText( "Interesting rules (click to set):", x, y + FontHeight * ++j, Color.LIGHTGRAY );
+				DrawText( "Interesting rules (click to set):", x, y + FontHeight * ++j, ColorHelpText );
 				x += FontWidth * 4;
-				DrawText( "Amoeba (S1358/B357)", x, y + FontHeight * ++j, Color.WHITE, ( ) => {
+				DrawText( "Amoeba (S1358/B357)", x, y + FontHeight * ++j, ColorHelpTextActive, ( ) => {
 					World.SurviveRule.Set( 1, 3, 5, 8 );
 					World.BirthRule.Set( 3, 5, 7 );
 				} );
-				DrawText( "Brian's Brain (S-/B2)", x, y + FontHeight * ++j, Color.WHITE, ( ) => {
+				DrawText( "Brian's Brain (S-/B2)", x, y + FontHeight * ++j, ColorHelpTextActive, ( ) => {
 					World.SurviveRule.Set( );
 					World.BirthRule.Set( 2 );
 				} );
-				DrawText( "Conway's Game of Life (S23/B3)", x, y + FontHeight * ++j, Color.WHITE, ( ) => {
+				DrawText( "Conway's Game of Life (S23/B3)", x, y + FontHeight * ++j, ColorHelpTextActive, ( ) => {
 					World.SurviveRule.Set( 2, 3 );
 					World.BirthRule.Set( 3 );
 				} );
-				DrawText( "Day & Night (S34678/B3678)", x, y + FontHeight * ++j, Color.WHITE, ( ) => {
+				DrawText( "Day & Night (S34678/B3678)", x, y + FontHeight * ++j, ColorHelpTextActive, ( ) => {
 					World.SurviveRule.Set( 3, 4, 6, 7, 8 );
 					World.BirthRule.Set( 3, 6, 7, 8 );
+					World.Wrap = true;
 				} );
-				DrawText( "High Life (S23/B36)", x, y + FontHeight * ++j, Color.WHITE, ( ) => {
+				DrawText( "High Life (S23/B36)", x, y + FontHeight * ++j, ColorHelpTextActive, ( ) => {
 					World.SurviveRule.Set( 2, 3 );
 					World.BirthRule.Set( 3, 6 );
 				} );
-				DrawText( "Majority (S5678/B5678)", x, y + FontHeight * ++j, Color.WHITE, ( ) => {
+				DrawText( "Majority (S5678/B5678)", x, y + FontHeight * ++j, ColorHelpTextActive, ( ) => {
 					World.SurviveRule.Set( 4, 5, 6, 7, 8 );
 					World.BirthRule.Set( 5, 6, 7, 8 );
+					World.Wrap = true;
 				} );
-				DrawText( "Walled Cities (S2345/B45678)", x, y + FontHeight * ++j, Color.WHITE, ( ) => {
+				DrawText( "Walled Cities (S2345/B45678)", x, y + FontHeight * ++j, ColorHelpTextActive, ( ) => {
 					World.SurviveRule.Set( 2, 3, 4, 5 );
 					World.BirthRule.Set( 4, 5, 6, 7, 8 );
 				} );
 			}
-			DrawText( "<F1> to toggle help", ViewGame.Left + mn, ViewGame.Top + mn, Color.LIGHTGRAY );
+			DrawText( "<F1> to toggle help", ViewGame.Left + mn, ViewGame.Top + mn, ColorHelpText );
 			// draw ctrls
-			Raylib.DrawRectangle( ViewCtrls.X, ViewCtrls.Y, ViewCtrls.Width, ViewCtrls.Height, Color.DARKGRAY );
+			Raylib.DrawRectangle( ViewCtrls.X, ViewCtrls.Y, ViewCtrls.Width, ViewCtrls.Height, ColorCtrlsBackground );
+			int yi = -1;
+			int xi = 0;
 			string text = $"{TPS}tps";
 			int length = FontWidth * text.Length;
-			DrawText( $"{ Raylib.GetFPS( )}fps", ViewCtrls.Left + mn + wd, ViewCtrls.Top + mn );
-			Raylib.DrawText( text, ViewCtrls.Left + mn, ViewCtrls.Top + mn, FontHeight, Color.GRAY );
-			if ( AreaClicked( ViewCtrls.Left + mn, ViewCtrls.Top + mn, length, FontHeight ) )
+			Raylib.DrawText( text, ViewCtrls.Left + mn + wd * xi, ViewCtrls.Top + mn + FontHeight * ++yi, FontHeight, ColorCtrlsText );
+			if ( AreaClicked( ViewCtrls.Left + mn + wd * xi, ViewCtrls.Top + mn, length, FontHeight ) )
 				TPS = TPS < 60 ? TPS + 5 : 60;
-			if ( AreaClicked( ViewCtrls.Left + mn, ViewCtrls.Top + mn, length, FontHeight, true ) )
+			if ( AreaClicked( ViewCtrls.Left + mn + wd * xi, ViewCtrls.Top + mn, length, FontHeight, true ) )
 				TPS = TPS > 5 ? TPS - 5 : 5;
-			int i = 1;
-			DrawText( "Clear", ViewCtrls.Left + mn + wd, ViewCtrls.Top + mn + FontHeight * i, ( ) => World.Clear( ) );
-			Raylib.DrawText( $"{size}px", ViewCtrls.Left + mn, ViewCtrls.Top + mn + FontHeight * i++, FontHeight, Color.GRAY );
-			DrawText( "Randomize", ViewCtrls.Left + mn + wd, ViewCtrls.Top + mn + FontHeight * i, ( ) => World.Randomize( ) );
-			DrawRule( 'S', ViewCtrls.Left + mn, ViewCtrls.Top + mn + FontHeight * i++, 1 );
-			DrawText( "Step", ViewCtrls.Left + mn + wd, ViewCtrls.Top + mn + FontHeight * i, ( ) => { if ( !Playing ) World.Update( ); } );
-			DrawRule( 'B', ViewCtrls.Left + mn, ViewCtrls.Top + mn + FontHeight * i++, 0 );
+			Raylib.DrawText( $"{size}px", ViewCtrls.Left + mn, ViewCtrls.Top + mn + FontHeight * ++yi, FontHeight, ColorCtrlsText );
+			DrawRule( 'S', ViewCtrls.Left + mn, ViewCtrls.Top + mn + FontHeight * ++yi, 1 );
+			DrawRule( 'B', ViewCtrls.Left + mn, ViewCtrls.Top + mn + FontHeight * ++yi, 0 );
+			yi = -1;
+			xi++;
+			DrawText( "Clear", ViewCtrls.Left + mn + wd * xi, ViewCtrls.Top + mn + FontHeight * ++yi, ( ) => World.Clear( ) );
+			DrawText( "Randomize", ViewCtrls.Left + mn + wd * xi, ViewCtrls.Top + mn + FontHeight * ++yi, ( ) => World.Randomize( ) );
+			DrawText( "Step", ViewCtrls.Left + mn + wd * xi, ViewCtrls.Top + mn + FontHeight * ++yi, ( ) => { if ( !Playing ) World.Update( ); } );
+			DrawText( "Wrap", ViewCtrls.Left + mn + wd * xi, ViewCtrls.Top + mn + FontHeight * ++yi, World.Wrap ? ColorCtrlsTextActive : ColorCtrlsText, ( ) => World.Wrap ^= true );
+			yi = -1;
+			xi++;
+			DrawText( $"{ Raylib.GetFPS( )}fps", ViewCtrls.Left + mn + wd * xi, ViewCtrls.Top + mn + FontHeight * ++yi, ( ) => World.Clear( ) );
 		}
 
 		private static bool DrawText( string text, int x, int y, Color color, Action action ) {
@@ -185,15 +208,15 @@ namespace Mogol {
 			return AreaClicked( x, y, MeasureText( text ), FontHeight );
 		}
 
-		private static bool DrawText( string text, int x, int y ) => DrawText( text, x, y, Color.GRAY );
-		private static bool DrawText( string text, int x, int y, Action action ) => DrawText( text, x, y, Color.GRAY, action );
+		private static bool DrawText( string text, int x, int y ) => DrawText( text, x, y, ColorCtrlsText );
+		private static bool DrawText( string text, int x, int y, Action action ) => DrawText( text, x, y, ColorCtrlsText, action );
 
 		private static void DrawRule( char prefix, int posX, int posY, int ruleId ) {
-			Raylib.DrawText( $"{prefix}:", posX, posY, FontHeight, Color.GRAY );
+			Raylib.DrawText( $"{prefix}:", posX, posY, FontHeight, ColorCtrlsText );
 			posX += FontWidth * 2;
 			for ( int i = 0; i <= 8; i++ ) {
 				int x = posX + i * FontWidth;
-				Raylib.DrawText( $"{8 - i}", x, posY, FontHeight, World.Rules[ruleId][8 - i] ? Color.LIGHTGRAY : Color.GRAY );
+				Raylib.DrawText( $"{8 - i}", x, posY, FontHeight, World.Rules[ruleId][8 - i] ? ColorCtrlsTextActive : ColorCtrlsText );
 				if ( AreaClicked( x, posY, FontWidth - 1, FontHeight ) )
 					World.Rules[ruleId][8 - i] ^= true;
 			}
@@ -202,7 +225,7 @@ namespace Mogol {
 #pragma warning disable CS0162 // Unreachable code detected
 		private static bool AreaClicked( int x, int y, int width, int height, bool right = false ) {
 			if ( DEBUG_BUTTONS )
-				Raylib.DrawRectangleLines( x, y, width, height, Color.RED );
+				Raylib.DrawRectangleLines( x, y, width, height, ColorDebugOutline );
 			return Raylib.IsMouseButtonPressed( right ? MouseButton.MOUSE_RIGHT_BUTTON : MouseButton.MOUSE_LEFT_BUTTON ) && Raylib.GetMouseX( ) >= x && Raylib.GetMouseX( ) < x + width && Raylib.GetMouseY( ) >= y && Raylib.GetMouseY( ) < y + height;
 
 		}

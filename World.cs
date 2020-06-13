@@ -10,8 +10,11 @@ namespace Mogol {
 
 		public int[,] Grid => which ? grid1 : grid2;
 		public int[,] OffGrid => which ? grid2 : grid1;
-		public int Width;
-		public int Height;
+		public readonly int Width;
+		public readonly int Height;
+		public bool Wrap = false;
+		public int CellsOn { get; private set; }
+		public int CellsOff => Width * Height - CellsOn;
 
 		public Rule BirthRule => Rules[0];
 		public Rule SurviveRule => Rules[1];
@@ -52,6 +55,7 @@ namespace Mogol {
 		}
 
 		public void Clear( ) {
+			CellsOn = 0;
 			for ( int x = 0; x < Width; x++ ) {
 				for ( int y = 0; y < Height; y++ ) {
 					grid1[x, y] = grid2[x, y] = 0;
@@ -60,17 +64,21 @@ namespace Mogol {
 		}
 
 		public void Randomize( ) {
+			CellsOn = 0;
 			for ( int x = 0; x < Width; x++ ) {
 				for ( int y = 0; y < Height; y++ ) {
 					grid1[x, y] = grid2[x, y] = Raylib.GetRandomValue( 0, 1 );
+					CellsOn += grid1[x, y];
 				}
 			}
 		}
 
 		public void Update( ) {
+			CellsOn = 0;
 			for ( int x = 0; x < Width; x++ ) {
 				for ( int y = 0; y < Height; y++ ) {
 					OffGrid[x, y] = Rules[( Grid[x, y] > 0 ).ToInt( )][SumNeighbors( x, y )].ToInt( );
+					CellsOn += OffGrid[x, y];
 				}
 			}
 			Swap( );
@@ -83,6 +91,12 @@ namespace Mogol {
 			int r = x + 1;
 			int u = y - 1;
 			int d = y + 1;
+			if ( Wrap ) {
+				l = l.Mod( Width );
+				r = r.Mod( Width );
+				u = u.Mod( Height );
+				d = d.Mod( Height );
+			}
 			return Get( l, u ) + Get( x, u ) + Get( r, u ) + Get( l, y ) + Get( r, y ) + Get( l, d ) + Get( x, d ) + Get( r, d );
 		}
 
