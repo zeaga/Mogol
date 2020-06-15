@@ -8,9 +8,6 @@ namespace Mogol {
 
 		private const bool DEBUG_BUTTONS = false;
 
-		[DllImport( "shlwapi.dll" )]
-		public static extern int ColorHLSToRGB( int H, int L, int S );
-
 		public readonly static Viewport ViewWindow = new Viewport( 1600, 900 );
 		public readonly static Viewport ViewGame = new Viewport( 0, 0, ViewWindow.Width, ViewWindow.Width / 2 );
 		public readonly static Viewport ViewCtrls = new Viewport( 0, ViewGame.Height, ViewWindow.Width, ViewWindow.Height - ViewGame.Height );
@@ -19,7 +16,7 @@ namespace Mogol {
 		public static int FontHeight => ViewWindow.Height / 45;
 		public static int FontWidth => MeasureText( "M" );
 
-		public static World World = new World( 160, 80, new Rule( 3 ), new Rule( 2, 3 ) );
+		public static Wolfram World = new Wolfram( 160, 80, new Rule( 3 ), new Rule( 2, 3 ) );
 
 		public static readonly float CELL_WIDTH = ViewGame.Width / World.Width;
 		public static readonly float CELL_HEIGHT = ViewGame.Height / World.Height;

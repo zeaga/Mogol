@@ -13,28 +13,12 @@ namespace Mogol {
 		public readonly int Width;
 		public readonly int Height;
 		public bool Wrap = false;
-		public int CellsOn { get; private set; }
-		public int CellsOff => Width * Height - CellsOn;
-
-		public Rule BirthRule => Rules[0];
-		public Rule SurviveRule => Rules[1];
-
-		public Rule[] Rules = new Rule[2];
+		protected int maxValue = 1;
+		public int RandomValue => Raylib.GetRandomValue( 0, maxValue );
 
 		public World( int width, int height ) {
 			Width = width;
 			Height = height;
-			Rules[0] = new Rule( );
-			Rules[1] = new Rule( );
-			grid1 = new int[width, height];
-			grid2 = new int[width, height];
-		}
-
-		public World( int width, int height, Rule birthRule, Rule surviveRule ) {
-			Width = width;
-			Height = height;
-			Rules[0] = birthRule;
-			Rules[1] = surviveRule;
 			grid1 = new int[width, height];
 			grid2 = new int[width, height];
 		}
@@ -55,7 +39,6 @@ namespace Mogol {
 		}
 
 		public void Clear( ) {
-			CellsOn = 0;
 			for ( int x = 0; x < Width; x++ ) {
 				for ( int y = 0; y < Height; y++ ) {
 					grid1[x, y] = grid2[x, y] = 0;
@@ -64,27 +47,16 @@ namespace Mogol {
 		}
 
 		public void Randomize( ) {
-			CellsOn = 0;
 			for ( int x = 0; x < Width; x++ ) {
 				for ( int y = 0; y < Height; y++ ) {
-					grid1[x, y] = grid2[x, y] = Raylib.GetRandomValue( 0, 1 );
-					CellsOn += grid1[x, y];
+					grid1[x, y] = grid2[x, y] = RandomValue;
 				}
 			}
 		}
 
-		public void Update( ) {
-			CellsOn = 0;
-			for ( int x = 0; x < Width; x++ ) {
-				for ( int y = 0; y < Height; y++ ) {
-					OffGrid[x, y] = Rules[( Grid[x, y] > 0 ).ToInt( )][SumNeighbors( x, y )].ToInt( );
-					CellsOn += OffGrid[x, y];
-				}
-			}
-			Swap( );
-		}
+		public virtual void Update( ) { }
 
-		public int IsOn( int x, int y ) => Get( x, y );
+		public bool IsOn( int x, int y ) => Get( x, y ) != 0;
 
 		public int SumNeighbors( int x, int y ) {
 			int l = x - 1;
