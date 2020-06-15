@@ -16,6 +16,21 @@ namespace Mogol {
 		protected int maxValue = 1;
 		public int RandomValue => Raylib.GetRandomValue( 0, maxValue );
 
+		protected int CurrentX { get; private set; }
+		protected int CurrentY { get; private set; }
+
+		protected int AboveLeft => Get( CurrentX - 1, CurrentY - 1 );
+		protected int Above => Get( CurrentX, CurrentY - 1 );
+		protected int AboveRight => Get( CurrentX + 1, CurrentY - 1 );
+		protected int Left => Get( CurrentX - 1, CurrentY );
+		protected int Here => Get( CurrentX, CurrentY );
+		protected int Right => Get( CurrentX + 1, CurrentY );
+		protected int BelowLeft => Get( CurrentX - 1, CurrentY + 1 );
+		protected int Below => Get( CurrentX, CurrentY + 1 );
+		protected int BelowRight => Get( CurrentX + 1, CurrentY + 1 );
+
+		public int NeighborSum => AboveLeft + Above + AboveRight + Left + Right + BelowLeft + Below + BelowRight;
+
 		public World( int width, int height ) {
 			Width = width;
 			Height = height;
@@ -23,7 +38,7 @@ namespace Mogol {
 			grid2 = new int[width, height];
 		}
 
-		public int Get( int x, int y, bool offGrid = false ) => x < 0 || x >= Width || y < 0 || y >= Height ? 0 : offGrid ? OffGrid[x, y] : Grid[x, y];
+		public int Get( int x, int y, bool offGrid = false ) => Wrap ? offGrid ? OffGrid[x.Mod( Width ), y.Mod( Height )] : Grid[x.Mod( Width ), y.Mod( Height )] : x < 0 || x >= Width || y < 0 || y >= Height ? 0 : offGrid ? OffGrid[x, y] : Grid[x, y];
 		public void Set( int x, int y, int value, bool offGrid = false ) {
 			if ( x < 0 || x >= Width || y < 0 || y >= Height )
 				return;
@@ -54,23 +69,20 @@ namespace Mogol {
 			}
 		}
 
-		public virtual void Update( ) { }
+		public void Update( ) {
+			for ( int x = 0; x < Width; x++ ) {
+				for ( int y = 0; y < Height; y++ ) {
+					CurrentX = x;
+					CurrentY = y;
+					OffGrid[x, y] = UpdateCell( );
+				}
+			}
+			Swap( );
+		}
+
+		public virtual int UpdateCell( ) => Here;
 
 		public bool IsOn( int x, int y ) => Get( x, y ) != 0;
-
-		public int SumNeighbors( int x, int y ) {
-			int l = x - 1;
-			int r = x + 1;
-			int u = y - 1;
-			int d = y + 1;
-			if ( Wrap ) {
-				l = l.Mod( Width );
-				r = r.Mod( Width );
-				u = u.Mod( Height );
-				d = d.Mod( Height );
-			}
-			return Get( l, u ) + Get( x, u ) + Get( r, u ) + Get( l, y ) + Get( r, y ) + Get( l, d ) + Get( x, d ) + Get( r, d );
-		}
 
 	}
 }
