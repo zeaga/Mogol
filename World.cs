@@ -12,12 +12,18 @@ namespace Mogol {
 		public int[,] OffGrid => which ? grid2 : grid1;
 		public readonly int Width;
 		public readonly int Height;
-		public bool Wrap = false;
-		protected int maxValue = 1;
-		public int RandomValue => Raylib.GetRandomValue( 0, maxValue );
+		public int EdgeCell = 0;
+		public bool Wrap {
+			get => EdgeCell < 0;
+			set {
+				if ( value != Wrap )
+					EdgeCell = ~EdgeCell;
+			}
+		}
+		public Color[] Colors = new Color[] { Color.BLACK, Color.RAYWHITE };
 
-		protected int CurrentX { get; private set; }
-		protected int CurrentY { get; private set; }
+		public int CurrentX { get; private set; }
+		public int CurrentY { get; private set; }
 
 		protected int AboveLeft => Get( CurrentX - 1, CurrentY - 1 );
 		protected int Above => Get( CurrentX, CurrentY - 1 );
@@ -36,9 +42,12 @@ namespace Mogol {
 			Height = height;
 			grid1 = new int[width, height];
 			grid2 = new int[width, height];
+			Clear( );
 		}
 
-		public int Get( int x, int y, bool offGrid = false ) => Wrap ? offGrid ? OffGrid[x.Mod( Width ), y.Mod( Height )] : Grid[x.Mod( Width ), y.Mod( Height )] : x < 0 || x >= Width || y < 0 || y >= Height ? 0 : offGrid ? OffGrid[x, y] : Grid[x, y];
+		public Color GetColor( int x, int y ) => Colors[Get( x, y ) % Colors.Length];
+
+		public int Get( int x, int y, bool offGrid = false ) => Wrap ? offGrid ? OffGrid[x.Mod( Width ), y.Mod( Height )] : Grid[x.Mod( Width ), y.Mod( Height )] : x < 0 || x >= Width || y < 0 || y >= Height ? EdgeCell : offGrid ? OffGrid[x, y] : Grid[x, y];
 		public void Set( int x, int y, int value, bool offGrid = false ) {
 			if ( x < 0 || x >= Width || y < 0 || y >= Height )
 				return;
@@ -56,7 +65,9 @@ namespace Mogol {
 		public void Clear( ) {
 			for ( int x = 0; x < Width; x++ ) {
 				for ( int y = 0; y < Height; y++ ) {
-					grid1[x, y] = grid2[x, y] = 0;
+					CurrentX = x;
+					CurrentY = y;
+					grid1[x, y] = grid2[x, y] = ClearCell( );
 				}
 			}
 		}
@@ -64,7 +75,9 @@ namespace Mogol {
 		public void Randomize( ) {
 			for ( int x = 0; x < Width; x++ ) {
 				for ( int y = 0; y < Height; y++ ) {
-					grid1[x, y] = grid2[x, y] = RandomValue;
+					CurrentX = x;
+					CurrentY = y;
+					grid1[x, y] = grid2[x, y] = RandomizeCell( );
 				}
 			}
 		}
@@ -80,6 +93,8 @@ namespace Mogol {
 			Swap( );
 		}
 
+		public virtual int ClearCell( ) => 0;
+		public virtual int RandomizeCell( ) => Raylib.GetRandomValue( 0, 1 );
 		public virtual int UpdateCell( ) => Here;
 
 		public bool IsOn( int x, int y ) => Get( x, y ) != 0;

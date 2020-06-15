@@ -3,23 +3,23 @@
 namespace Mogol {
 	public class Rule {
 
-		public int Flag;
+		private int flag;
 
 		public bool this[int i] {
-			get => ( ( Flag >> i ) & 1 ) != 0;
-			set => Flag ^= ( value.ToInt( -1 ) ^ Flag ) & ( 1 << i );
+			get => ( ( flag >> i ) & 1 ) != 0;
+			set => flag ^= ( value.ToInt( -1 ) ^ flag ) & ( 1 << i );
 		}
 
 		public void Set( params int[] items ) {
-			Flag = 0;
+			flag = 0;
 			foreach ( int item in items )
-				Flag |= 1 << item;
+				flag |= 1 << item;
 		}
 
 		public Rule( params int[] items ) {
-			Flag = 0;
+			flag = 0;
 			foreach ( int item in items )
-				Flag |= 1 << item;
+				flag |= 1 << item;
 		}
 
 	}
